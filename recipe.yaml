@@ -1,0 +1,45 @@
+---
+RecipeFormatVersion: "2020-01-25"
+ComponentName: "imcloud.imphm.annotator.DIOMap"
+ComponentVersion: "1.0.0"
+ComponentDescription: "DIOMap component. Subscribes to shadow delta, maps gpio_state to status code, and publishes it."
+ComponentPublisher: "imCloud Co., Ltd."
+ComponentConfiguration:
+  DefaultConfiguration:
+    LogLevel: "INFO"
+    FeatureTopic: "/topic/local/feature/time_domain"
+    AnnotatedFeatureTopic: "/topic/local/annotator/dio_map"
+    ShadowName: "imPHMGPIOState"
+    rules:
+      - name: "GPIOState-1111"
+        label: "stop"
+      - name: "GPIOState-0111"
+        label: "running"
+    accessControl:
+      aws.greengrass.ShadowManager:
+        imcloud.imphm.annotator.DIOMap:shadow:1:
+          policyDescription: "Allows access to DIO shadow"
+          operations:
+            - "aws.greengrass#UpdateThingShadow"
+            - "aws.greengrass#GetThingShadow"
+          resources:
+          # - $aws/things/{iot:thingName}/shadow/name/imPHMGPIOState #FIXME - This is not working, so temporarily using hardcoded thing name
+            - $aws/things/MDI-Dev/shadow/name/imPHMGPIOState
+      aws.greengrass.ipc.pubsub:
+        imcloud.imphm.annotator.DIOMap:pubsub:1:
+          policyDescription: "Allows DIO_map to publish status code"
+          operations:
+            - aws.greengrass#SubscribeToTopic
+            - aws.greengrass#PublishToTopic
+          resources:
+            - $aws/things/MDI-Dev/shadow/name/imPHMGPIOState/update/accepted
+            - "/topic/local/feature/time_domain"
+            - "/topic/local/annotator/dio_map"
+Manifests:
+  - Platform:
+      os: all
+    Artifacts:
+      - Uri: "s3://BUCKET_NAME/COMPONENT_NAME/COMPONENT_VERSION/imphm-aws_ggc-annotator-DIOMap.zip"
+        Unarchive: ZIP
+    Lifecycle:
+      run: "python3 -u {artifacts:decompressedPath}/imphm-aws_ggc-annotator-DIOMap/src/main.py --thing-name {iot:thingName} --shadow-name {configuration:/ShadowName} --log-level {configuration:/LogLevel} --feature-topic {configuration:/FeatureTopic} --annotated-feature-topic {configuration:/AnnotatedFeatureTopic} --rules {configuration:/rules}"
