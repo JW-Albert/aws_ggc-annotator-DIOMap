@@ -66,7 +66,7 @@ class DIOMap:
 
     def subscribe_shadow_topic(self):
         self.ipc_client.subscribe_to_topic(
-            topic=f"$aws/things/{self.thing_name}/shadow/name/imPHMGPIOState/update/accepted",
+            topic=f"$aws/things/{self.thing_name}/shadow/name/{self.shadow_name}/update/accepted",
             on_stream_event=self._on_shadow_stream_event,
             on_stream_error=self._on_stream_error,
             on_stream_closed=self._on_stream_closed
